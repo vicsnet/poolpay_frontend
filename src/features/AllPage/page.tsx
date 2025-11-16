@@ -81,7 +81,7 @@ export default function page() {
                     onClick={handleJoinClick}
                     className={`flex items-center justify-center w-full sm:w-auto px-8 py-3 border-2 border-blue-700 text-base font-medium text-blue-700 bg-white md:py-4 md:text-lg md:px-10 hover:bg-blue-50 transition duration-300 rounded-xl`}
                   >
-                    Join a Pool with an Invite
+                    My Dashboard
                   </button>
                 </div>
               </div>
