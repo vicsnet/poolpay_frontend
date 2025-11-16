@@ -43,11 +43,11 @@ export default function CreatePool() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const referralStr = Array.isArray(referral) ? referral[0] : referral;
-        if (!referralStr){
+        if (!referralStr) {
             toast.error("Invalid referral link");
             return;
         };
-        if (!account.address){
+        if (!account.address) {
             toast.error("Please connect your wallet to join the pool");
             return;
         }
@@ -69,7 +69,7 @@ export default function CreatePool() {
 
     if (isConfirmed) {
         console.log(data);
-      
+
         redirect(`/${id}`);
 
         console.log("Pool Created Successfully");
@@ -89,31 +89,31 @@ export default function CreatePool() {
     return (
         <div className="">
             <div className="fixed top-0 left-0 w-full z-60">
-                    <Header />
-           
+                <Header />
+
             </div>
 
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 transition-opacity duration-300" aria-modal="true" role="dialog">
-            <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 m-auto transform transition-all duration-300 scale-100">
-                <button
-                    type="button"
-                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-50 transition duration-150"
-                onClick={onClose}
-                >
-                    <span className="sr-only">Close</span>
-                    <X className="h-6 w-6" aria-hidden="true" />
-                </button>
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 transition-opacity duration-300" aria-modal="true" role="dialog">
+                <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 m-auto transform transition-all duration-300 scale-100">
+                    <button
+                        type="button"
+                        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-50 transition duration-150"
+                        onClick={onClose}
+                    >
+                        <span className="sr-only">Close</span>
+                        <X className="h-6 w-6" aria-hidden="true" />
+                    </button>
 
-                <div className="text-center">
-                    <Handshake className={`mx-auto h-12 w-12 ${primaryTextColor}`} />
-                    <h3 className="mt-4 text-2xl font-extrabold text-gray-900">
-                        Join {ReferredPoolName ? ReferredPoolName as string : "Group Savings"} Savings Pool
-                    </h3>
-                    <p className="mt-2 text-gray-500">
-                        You have been invited to join a savings pool. Please click on the button below to Join {ReferredPoolName as string}
-                    </p>
-                </div>
-                  <div className="flex justify-center space-x-3 mt-6" >
+                    <div className="text-center">
+                        <Handshake className={`mx-auto h-12 w-12 ${primaryTextColor}`} />
+                        <h3 className="mt-4 text-2xl font-extrabold text-gray-900">
+                            Join {ReferredPoolName ? ReferredPoolName as string : "Group Savings"} Savings Pool
+                        </h3>
+                        <p className="mt-2 text-gray-500">
+                            You have been invited to join a savings pool. Please click on the button below to Join {ReferredPoolName as string}
+                        </p>
+                    </div>
+                    <div className="flex justify-center space-x-3 mt-6" >
                         <button
                             type="button"
                             onClick={onClose}
@@ -139,7 +139,7 @@ export default function CreatePool() {
                         </button>
                     </div>
 
-                {/* <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
+                    {/* <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
                     <div className="space-y-6">
                         <div>
                             <label htmlFor="invite-code" className="block text-sm font-medium text-gray-700 text-left">
@@ -243,8 +243,8 @@ export default function CreatePool() {
                         </button>
                     </div>
                 </form> */}
+                </div>
             </div>
-        </div>
         </div>
     )
 }

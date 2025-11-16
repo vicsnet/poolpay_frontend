@@ -1,4 +1,4 @@
-export const PoolFactoryAddress = "0x3d53101FCAf0699F31A0e33723927a1386258e0f";
+export const PoolFactoryAddress = "0x6653186c87B5DBB089d66fe2e7d3B3dC1F35Ff35";
 
 export const usdcAddress = "0x3600000000000000000000000000000000000000"
 

@@ -1,11 +1,11 @@
 "use client"
-import React, { use } from 'react'
+import React, { use, useEffect } from 'react'
 import { Menu, X, Wallet, Users, Clock, ShieldCheck, Zap, TrendingUp, Handshake, ArrowRight, DollarSign, Calendar, Lock, ChevronDown, ChevronUp, CheckCircle, Link, Home, List, Activity, Settings, Copy, User, ArrowLeft, PiggyBank, Briefcase, FileText } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import PoolABI from '@/contract/abi/PoolABI.json';
 import { usdcAddress } from '@/contract/contract'
 
-import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { useAccount, useReadContract, useReadContracts, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import usdcABI from '@/contract/abi/usdcABI.json'
 import InfoCard from '@/components/InfoCard';
 import Header from '@/components/Header';
@@ -93,6 +93,7 @@ export default function page() {
         abi: PoolABI as any,
         functionName: 'getTotalContributors',
         args: [],
+
     });
 
     const { data: currentAmount } = useReadContract({
@@ -102,6 +103,53 @@ export default function page() {
         args: [],
     });
 
+    const { data: estimate } = useReadContract({
+        address: poolId as `0x${string}`,
+        abi: PoolABI as any,
+        functionName: 'estimatePayoutFor',
+        args: [address as `0x${string}`],
+    });
+
+    const { data: cycleDurration } = useReadContract({
+        address: poolId as `0x${string}`,
+        abi: PoolABI as any,
+        functionName: 'cycleDuration',
+        args: [],
+    });
+
+    const { data: startTime } = useReadContract({
+        address: poolId as `0x${string}`,
+        abi: PoolABI as any,
+        functionName: 'cycleStartTime',
+        args: [],
+    });
+
+
+
+    console.log('est', estimate);
+
+    // NOTE: add `useContractReads` to your imports: `import { useContractReads } from 'wagmi'`
+
+    const contributorAddresses = Array.isArray(allUser) ? (allUser as string[]).slice(0, 5) : [];
+
+    const contractCalls = contributorAddresses.map((contributor) => ({
+        address: poolId as `0x${string}`,
+        abi: PoolABI as any,
+        functionName: 'estimatePayoutFor',
+        args: [contributor as `0x${string}`],
+    }));
+
+    const { data: estimates } = useReadContracts({
+        contracts: contractCalls,
+        // watch: true,
+    });
+
+    // `estimates` will be an array aligned with `contributorAddresses`.
+    // e.g. to log readable values:
+
+
+    // console.log(`estimate`, EstimatePayout);
+
     const { data: allowance } = useReadContract({
         address: usdcAddress as `0x${string}`,
         abi: usdcABI as any,
@@ -109,60 +157,8 @@ export default function page() {
         args: [address as `0x${string}`, poolId as `0x${string}`],
     });
 
-    console.log(allowance);
 
-    // convert bytes32 (0x...) to a UTF-8 string and create display variables
-    // const bytes32ToString = (input: any): string => {
-    //     if (input === null || input === undefined) return '';
-    //     if (Array.isArray(input)) return input.map(bytes32ToString).join(', ');
 
-    //     // handle ethers/BigNumber-like objects or Uint8Array/Buffer views
-    //     if (typeof input === 'object') {
-    //         if (typeof input._hex === 'string') input = input._hex;
-    //         else if (ArrayBuffer.isView(input) || input instanceof ArrayBuffer) {
-    //             const bytes = input instanceof ArrayBuffer ? new Uint8Array(input) : new Uint8Array((input as any).buffer || input);
-    //             const decoded = new TextDecoder().decode(bytes);
-    //             return decoded.replace(/\0+$/, '');
-    //         } else if (typeof input.toString === 'function') {
-    //             const s = input.toString();
-    //             if (s.startsWith('0x')) input = s;
-    //             else return s;
-    //         } else {
-    //             return String(input);
-    //         }
-    //     }
-
-    //     if (typeof input !== 'string') return String(input);
-    //     if (!input.startsWith('0x')) return input;
-
-    //     try {
-    //         let hex = input.replace(/^0x/, '');
-    //         if (hex.length % 2 === 1) hex = '0' + hex;
-    //         const bytes = new Uint8Array(hex.length / 2);
-    //         for (let i = 0; i < bytes.length; i++) {
-    //             bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
-    //         }
-    //         const decoded = new TextDecoder().decode(bytes).replace(/\0+$/, '');
-
-    //         // If decoded is printable return it, otherwise fall back to hex string
-    //         if (/^[\x20-\x7E]*$/.test(decoded) && decoded.length > 0) return decoded;
-
-    //         // try trimming leading zero padding and decode again
-    //         const trimmedHex = hex.replace(/^0+/, '');
-    //         if (trimmedHex) {
-    //             const b2 = new Uint8Array(trimmedHex.length / 2);
-    //             for (let i = 0; i < b2.length; i++) {
-    //                 b2[i] = parseInt(trimmedHex.substr(i * 2, 2), 16);
-    //             }
-    //             const d2 = new TextDecoder().decode(b2).replace(/\0+$/, '');
-    //             if (/^[\x20-\x7E]*$/.test(d2) && d2.length > 0) return d2;
-    //         }
-
-    //         return decoded || input;
-    //     } catch {
-    //         return input;
-    //     }
-    // };
     const { data: hash, writeContract: deposit, isPending } = useWriteContract();
 
     const { isLoading: isConfirming, isSuccess: isConfirmed, data, error, isError } =
@@ -177,34 +173,43 @@ export default function page() {
             hash: tokenHash,
         });
 
-    const makeContribution = () => {
+
+    const makeContribution = async () => {
+        console.log('clicked');
+
         if (!minimumContribution) {
             toast.error('Minimum contribution has not been set')
             return
         }
 
+        console.log('hello clicked', Number(minimumContribution));
+
+
         if (Number(allowance as any) >= Number(minimumContribution as any)) {
-            deposit({
+            await deposit({
                 address: poolId as `0x${string}`,
                 abi: PoolABI,
                 functionName: 'contribute',
-                args: [minimumContribution],
+                args: [Number(minimumContribution)],
             });
         } else {
+            console.log('hello clicked3');
 
-            tokenApprove({
+            await tokenApprove({
                 address: usdcAddress as `0x${string}`,
                 abi: usdcABI,
-                functionName: 'contribute',
-                args: [poolId as `0x${string}`, minimumContribution],
+                functionName: 'approve',
+                args: [poolId as `0x${string}`, Number(minimumContribution)],
             });
+            console.log('hello approve')
+
             if (tokenIsConfirmed) {
 
                 deposit({
                     address: poolId as `0x${string}`,
                     abi: PoolABI,
                     functionName: 'contribute',
-                    args: [minimumContribution],
+                    args: [Number(minimumContribution)],
                 });
             }
         }
@@ -220,6 +225,12 @@ export default function page() {
         toast.success('Deposit transaction Successful')
     }
 
+
+    const generateDate =(startTime:number, duration:number)=>{
+        const cycle  = startTime + duration;
+        const endDate = new Date(cycle * 1000);
+        return endDate;
+    }
 
     // e.g. replace `{poolName as string}` with `{displayPoolName}`
     console.log("All Users in Pool: ", allUser);
@@ -253,7 +264,14 @@ export default function page() {
         { name: 'Chris W.', status: 'Due', date: 'Nov 1, 2025' },
     ].slice(0, currentPool.members);
 
+    // useEffect(() => {
 
+    //     if (!estimates) return;
+    //     console.log(estimates);
+    //     estimates.forEach((e, i) => {
+    //         console.log(`Estimate for ${contributorAddresses[i]}:`, e?.toString?.() ?? e);
+    //     });
+    // }, [estimates, contributorAddresses]);
 
     return (
         <main>
@@ -310,7 +328,7 @@ export default function page() {
                             </span>
                             <div className="flex items-center text-sm">
                                 <Link className="h-4 w-4 mr-1" />
-                                Pool ID: <span className="font-mono ml-1">{String(referralCode ?? '')}</span>
+                                Pool ID: <span className="font-mono ml-1">{referralCode as string}</span>
                             </div>
                         </div>
                     </header>
@@ -319,19 +337,19 @@ export default function page() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                         <InfoCard
                             title="Total Pool Payout"
-                            value={`$${totalPoolPayout ? (Number(totalPoolPayout) / 1e18).toLocaleString() : '0'}`}
+                            value={`$${totalPoolPayout ? (Number(totalPoolPayout) / 1e6).toLocaleString() : '0'}`}
                             icon={DollarSign}
                             color="#10B981" // Green
                         />
                         <InfoCard
                             title="Minimum Contribution"
-                            value={`$${minimumContribution ? (Number(minimumContribution) / 1e18).toLocaleString() : '0'}`}
+                            value={`$${minimumContribution ? (Number(minimumContribution) / 1e6).toLocaleString() : '0'}`}
                             icon={Briefcase}
                             color="#3B82F6" // Blue
                         />
                         <InfoCard
                             title="Next Payout Date"
-                            value={currentPool.payoutDate}
+                            value={(startTime && cycleDurration) ? generateDate(Number(startTime), Number(cycleDurration)).toLocaleString() : '—'}
                             icon={Calendar}
                             color="#F59E0B" // Amber
                         />
@@ -349,37 +367,54 @@ export default function page() {
                             color="#8B5CF6" // Purple
                         />
                         <InfoCard
-                            title="Current Cycle Paid in"
-                            value={currentAmount ? (Number(currentAmount) / 1e18).toLocaleString() : '0'}
+                            title="Amount in Escrow"
+                            value={currentAmount ? (Number(currentAmount) / 1e6).toLocaleString() : '0'}
                             icon={Calendar}
                             color="#8B5CF6" // Purple
                         />
                     </div>
 
                     {/* Payout Schedule & Members */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="">
 
                         {/* Schedule Card */}
-                        <div className="lg:col-span-2 bg-white p-8 rounded-2xl shadow-xl">
+                        {/* <div className="lg:col-span-2 bg-white p-8 rounded-2xl shadow-xl">
                             <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
                                 <FileText className="h-6 w-6 mr-2 text-blue-500" />
-                                Payout Schedule & Status
+                                My P
                             </h2>
                             <div className="space-y-4">
-                                {mockMembers.map((member, index) => (
-                                    <div key={index} className="flex justify-between items-center p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition duration-150">
-                                        <div className="flex items-center space-x-3">
-                                            <div className="text-sm font-semibold w-8 text-center text-gray-500">{index + 1}.</div>
-                                            <p className="font-medium text-gray-700">{member.name}</p>
-                                        </div>
-                                        <div className={`text-sm font-medium px-3 py-1 rounded-full ${member.status === 'Collected' ? 'bg-indigo-100 text-indigo-800' : member.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                            {member.status}
-                                        </div>
-                                        <p className="text-sm text-gray-500 min-w-[100px] text-right">{member.date}</p>
-                                    </div>
-                                ))}
+                                {(contributorAddresses && contributorAddresses.length > 0) ? (
+                                    contributorAddresses.map((addr, index) => {
+                                        const raw = estimates?.[index];
+                                        // basic formatting: try to show as USDC (assumes 18 decimals). Fall back to raw string.
+                                        const estimateDisplay = raw
+                                            ? `${(Number(raw as any) / 1e18).toLocaleString(undefined, { maximumFractionDigits: 6 })} USDC`
+                                            : '—';
+
+                                        const shortAddr = typeof addr === 'string' ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : String(addr);
+
+                                        return (
+                                            <div
+                                                key={`${addr}-${index}`}
+                                                className="flex justify-between items-center p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition duration-150"
+                                            >
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="text-sm font-semibold w-8 text-center text-gray-500">{index + 1}.</div>
+                                                    <p className="font-medium text-gray-700">{shortAddr}</p>
+                                                </div>
+
+                                                <div className="text-sm text-gray-500 font-medium text-right min-w-[140px]">
+                                                    {estimateDisplay}
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="text-gray-500 p-3">No contributor estimates available yet.</div>
+                                )}
                             </div>
-                        </div>
+                        </div> */}
 
                         {/* Members Overview */}
                         <div className="bg-white p-8 rounded-2xl shadow-xl">
@@ -387,7 +422,7 @@ export default function page() {
                                 <Users className="h-6 w-6 mr-2 text-blue-500" />
                                 {Array.isArray(allUser) ? allUser.length : 0} Pool Members
                             </h2>
-                            <ul className="space-y-3">
+                            <ul className="space-y-4">
                                 {(Array.isArray(allUser) ? allUser : []).map((member: any, index: number) => (
                                     <li key={index} className="flex items-center space-x-3">
                                         <User className="h-5 w-5 text-gray-400" />
@@ -395,9 +430,9 @@ export default function page() {
                                     </li>
                                 ))}
                             </ul>
-                            <button className={`mt-6 w-full py-3 rounded-xl shadow-md text-white font-medium ${primaryColor} ${primaryBgHover} transition duration-150`}>
+                            {/* <button className={`mt-6 w-full py-3 rounded-xl shadow-md text-white font-medium ${primaryColor} ${primaryBgHover} transition duration-150`}>
                                 Invite More Members
-                            </button>
+                            </button> */}
                         </div>
 
                     </div>

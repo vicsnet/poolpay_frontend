@@ -71,6 +71,8 @@ console.log("Duration in Days: ", durationInDays);
         // redirect(`/${poolAddress}`);
 
         // console.log("Pool Created Successfully");
+        onClose()
+        toast.success('Pool started')
         console.log(hash)
     }
 
